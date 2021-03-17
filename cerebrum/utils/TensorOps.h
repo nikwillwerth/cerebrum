@@ -10,14 +10,20 @@
 
 class TensorOps {
 public:
-    static Eigen::Tensor<double, 2> dot(const Eigen::Tensor<double, 2>& a, const Eigen::Tensor<double, 2>& b);
-    static Eigen::Tensor<double, 2> transpose(Eigen::Tensor<double, 2> x);
-    static Eigen::Tensor<double, 2> broadcast(const Eigen::Tensor<double, 2>& x, size_t dimOne, size_t dimTwo);
-    static Eigen::Tensor<double, 2> maxKeepDims(const Eigen::Tensor<double, 2>& x, size_t axis);
-    static Eigen::Tensor<double, 2> sumKeepDims(const Eigen::Tensor<double, 2>& x, size_t axis);
-    static Eigen::Tensor<double, 2> reshape(Eigen::Tensor<double, 1> x, size_t dimOne, size_t dimTwo);
-    static Eigen::Tensor<double, 2> reshape(Eigen::Tensor<double, 4> x, size_t dimOne, size_t dimTwo);
-    static Eigen::Tensor<double, 4> reshape(Eigen::Tensor<double, 2> x, size_t dimOne, size_t dimTwo, size_t dimThree, size_t dimFour);
+    static Eigen::Tensor<double, 2, 0, long> dot(const Eigen::Tensor<double, 2, 0, long>& a, const Eigen::Tensor<double, 2, 0, long>& b);
+    static Eigen::Tensor<double, 2, 0, long> transpose(Eigen::Tensor<double, 2, 0, long> x);
+    static Eigen::Tensor<double, 2, 0, long> broadcast(const Eigen::Tensor<double, 2, 0, long>& x, size_t dimOne, size_t dimTwo);
+    static Eigen::Tensor<double, 4, 0, long> broadcast(const Eigen::Tensor<double, 1, 0, long>& x, size_t dimOne, size_t dimTwo, size_t dimThree, size_t dimFour);
+    static Eigen::Tensor<double, 2, 0, long> maxKeepDims(const Eigen::Tensor<double, 2, 0, long>& x, size_t axis);
+    static Eigen::Tensor<double, 2, 0, long> sumKeepDims(const Eigen::Tensor<double, 2, 0, long>& x, size_t axis);
+    static Eigen::Tensor<double, 2, 0, long> reshape(Eigen::Tensor<double, 1, 0, long> x, size_t dimOne, size_t dimTwo);
+    static Eigen::Tensor<double, 4, 0, long> reshape(Eigen::Tensor<double, 1, 0, long> x, size_t dimOne, size_t dimTwo, size_t dimThree, size_t dimFour);
+    static Eigen::Tensor<double, 2, 0, long> reshape(Eigen::Tensor<double, 4, 0, long> x, size_t dimOne, size_t dimTwo);
+    static Eigen::Tensor<double, 4, 0, long> reshape(Eigen::Tensor<double, 2, 0, long> x, size_t dimOne, size_t dimTwo, size_t dimThree, size_t dimFour);
+    static Eigen::Tensor<double, 4, 0, long> reshape(Eigen::Tensor<double, 4, 0, long> x, size_t dimOne, size_t dimTwo, size_t dimThree, size_t dimFour);
+    static void printShape(const Eigen::Tensor<double, 1, 0, long>& x);
+    static void printShape(const Eigen::Tensor<double, 2, 0, long>& x);
+    static void printShape(const Eigen::Tensor<double, 4, 0, long>& x);
 };
 
 

@@ -20,7 +20,7 @@ public:
     std::vector<std::size_t> outputShape;
     std::size_t batchSize;
 
-private:
+protected:
     Layer *inputLayer;
 };
 
