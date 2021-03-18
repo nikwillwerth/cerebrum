@@ -7,23 +7,13 @@
 #include "../utils/TensorOps.h"
 
 Dense::Dense(Layer *inputLayer, std::size_t numOutputs) : Layer(inputLayer) {
-    this->numInputs  = 1;
     this->numOutputs = numOutputs;
+    this->numInputs  = this->inputLayer->outputShape[1] * this->inputLayer->outputShape[2] * this->inputLayer->outputShape[3];
 
-    for(std::size_t i = 1; i < this->inputLayer->outputShape.size(); i++) {
-        this->numInputs *= this->inputLayer->outputShape[i];
-    }
+    this->weights = TensorOps::getRandomTensor(numOutputs, this->numInputs);
+    this->biases  = TensorOps::getRandomTensor(1, numOutputs);
 
-    this->weights = Eigen::Tensor<double, 2, 0, long>(long(numOutputs), long(this->numInputs));
-    this->biases  = Eigen::Tensor<double, 2, 0, long>(1, long(numOutputs));
-
-    this->weights.setRandom<Eigen::internal::NormalRandomGenerator<double>>();
-    this->biases.setRandom<Eigen::internal::NormalRandomGenerator<double>>();
-
-    this->weights *= this->weights.constant(0.1);
-    this->biases  *= this->biases.constant(0.1);
-
-    this->outputShape = {this->batchSize, this->numOutputs, 1, 1};
+    this->outputShape = {this->batchSize, 1, 1, this->numOutputs};
 }
 
 Eigen::Tensor<double, 4, 0, long> Dense::forward(Eigen::Tensor<double, 4, 0, long> x) {
@@ -38,7 +28,7 @@ Eigen::Tensor<double, 4, 0, long> Dense::forward(Eigen::Tensor<double, 4, 0, lon
     // broadcast biases from (1, numOutputs) to (batchSize, numOutputs)
     Eigen::Tensor<double, 2, 0, long> broadcastBiases = TensorOps::broadcast(this->biases, this->batchSize, 1);
 
-    // reshape output to have 4 dimensions
+    // reshape output from (batchSize, numOutputs) to (batchSize, 1, 1, numOutputs)
     Eigen::Tensor<double, 4, 0, long> reshapedOutput = TensorOps::reshape(output,          this->batchSize, 1, 1, this->numOutputs);
     Eigen::Tensor<double, 4, 0, long> reshapedBiases = TensorOps::reshape(broadcastBiases, this->batchSize, 1, 1, this->numOutputs);
 
@@ -63,5 +53,6 @@ Eigen::Tensor<double, 4, 0, long> Dense::backward(Eigen::Tensor<double, 4, 0, lo
     // t * w
     Eigen::Tensor<double, 2, 0, long> output = TensorOps::dot(reshapedT, this->weights);
 
+    // reshape output to be (batchSize, 1, 1, numInputs)
     return TensorOps::reshape(output, this->batchSize, 1, 1, this->numInputs);
 }

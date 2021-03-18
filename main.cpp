@@ -34,7 +34,7 @@ int main()
     outputs(0, 0, 0, 0) = 1;
     outputs(1, 0, 0, 1) = 1;
 
-    for(std::size_t i = 0; i < 1000; i++) {
+    for(std::size_t i = 0; i < 10000; i++) {
         Eigen::Tensor<double, 4, 0, long> x = inputs;
 
         for(Layer *layer : layers) {

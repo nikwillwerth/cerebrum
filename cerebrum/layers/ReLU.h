@@ -12,8 +12,8 @@ class ReLU: public Layer {
 public:
     ReLU(Layer *inputLayer);
 
-    Eigen::Tensor<double, 4> forward(Eigen::Tensor<double, 4> x) override;
-    Eigen::Tensor<double, 4> backward(Eigen::Tensor<double, 4> t) override;
+    Eigen::Tensor<double, 4, 0, long> forward(Eigen::Tensor<double, 4, 0, long> x) override;
+    Eigen::Tensor<double, 4, 0, long> backward(Eigen::Tensor<double, 4, 0, long> t) override;
 };
 
 

@@ -2,23 +2,27 @@
 // Created by Nik Willwerth on 3/16/21.
 //
 
-#include <iostream>
 #include "Softmax.h"
 #include "../utils/TensorOps.h"
 
-Eigen::Tensor<double, 4> Softmax::forward(Eigen::Tensor<double, 4> x) {
-    // reshape x to be (batchSize, numOutputs)
-    Eigen::Tensor<double, 2, 0, long> reshapedX = TensorOps::reshape(x, x.dimension(0), x.dimension(3));
-
-    // exp(x - x.max(axis=1, keepdims=True))
-    Eigen::Tensor<double, 2, 0, long> e = (reshapedX - TensorOps::broadcast(TensorOps::maxKeepDims(reshapedX, 1), 1, x.dimension(3))).exp();
-
-    // e / sum(e, axis=1, keepdims=True)
-    Eigen::Tensor<double, 2, 0, long> output = e / TensorOps::broadcast(TensorOps::sumKeepDims(e, 1), 1, x.dimension(3));
-
-    return TensorOps::reshape(output, output.dimension(0), 1, 1, output.dimension(1));
+Softmax::Softmax(Layer *inputLayer) : Layer(inputLayer) {
+    this->numOutputs = this->inputLayer->outputShape[3];
 }
 
-Eigen::Tensor<double, 4> Softmax::backward(Eigen::Tensor<double, 4> t) {
+Eigen::Tensor<double, 4, 0, long> Softmax::forward(Eigen::Tensor<double, 4, 0, long> x) {
+    // reshape x to be (batchSize, numOutputs)
+    Eigen::Tensor<double, 2, 0, long> reshapedX = TensorOps::reshape(x, this->batchSize, this->numOutputs);
+
+    // exp(x - x.max(axis=1, keepdims=True))
+    Eigen::Tensor<double, 2, 0, long> e = (reshapedX - TensorOps::broadcast(TensorOps::maxKeepDims(reshapedX, 1), 1, this->numOutputs)).exp();
+
+    // e / sum(e, axis=1, keepdims=True)
+    Eigen::Tensor<double, 2, 0, long> output = e / TensorOps::broadcast(TensorOps::sumKeepDims(e, 1), 1, this->numOutputs);
+
+    // reshape output to be (batchSize, 1, 1, numOutputs)
+    return TensorOps::reshape(output, this->batchSize, 1, 1, this->numOutputs);
+}
+
+Eigen::Tensor<double, 4, 0, long> Softmax::backward(Eigen::Tensor<double, 4, 0, long> t) {
     return t;
 }

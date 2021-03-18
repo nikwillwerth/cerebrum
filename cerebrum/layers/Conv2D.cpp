@@ -15,14 +15,8 @@ Conv2D::Conv2D(Layer *inputLayer, std::size_t numFilters, std::size_t filterSize
     std::size_t inputWidth    = this->inputLayer->outputShape[2];
     std::size_t inputChannels = this->inputLayer->outputShape[3];
 
-    this->weights = Eigen::Tensor<double, 4, 0, long>(long(this->filterSize), long(this->filterSize), long(inputChannels), long(numFilters));
-    this->biases  = Eigen::Tensor<double, 1, 0, long>(long(numFilters));
-
-    this->weights.setRandom<Eigen::internal::NormalRandomGenerator<double>>();
-    this->biases.setRandom<Eigen::internal::NormalRandomGenerator<double>>();
-
-    this->weights *= this->weights.constant(0.1);
-    this->biases  *= this->biases.constant(0.1);
+    this->weights = TensorOps::getRandomTensor(long(this->filterSize), long(this->filterSize), long(inputChannels), long(numFilters));
+    this->biases  = TensorOps::getRandomTensor(numFilters);
 
     if(padding == "same") {
         this->pad         = std::size_t((this->filterSize - 1) / 2);
@@ -41,90 +35,88 @@ Conv2D::Conv2D(Layer *inputLayer, std::size_t numFilters, std::size_t filterSize
 Eigen::Tensor<double, 4, 0, long> Conv2D::forward(Eigen::Tensor<double, 4, 0, long> x) {
     this->previousX = x;
 
-//    Eigen::PaddingType paddingType;
-//
-//    if(this->padding == "same") {
-//        paddingType = Eigen::PADDING_SAME;
-//    } else {
-//        paddingType = Eigen::PADDING_VALID;
-//    }
-//
-//    Eigen::Tensor<double, 4, 0, long> patches = x.extract_image_patches(this->filterSize, this->filterSize, this->stride, this->stride, 1, 1, paddingType, 0);
-//
-//    std::cout << patches << std::endl;
-
-//    std::cout << x.dimension(0) << " " << x.dimension(1) << " " << x.dimension(2) << " " << x.dimension(3) << std::endl;
-
+    // im2col
     this->cols = this->im2col(x);
 
     std::size_t weightsDimTwo = this->weights.dimension(0) * this->weights.dimension(1) * this->weights.dimension(2);
 
-    Eigen::array<long, 4> weightsShuffleIndices({3, 2, 0, 1});
-    Eigen::Tensor<double, 4, 0, long> transposedWeights = this->weights.shuffle(weightsShuffleIndices);
-    Eigen::Tensor<double, 2, 0, long> reshapedWeights   = TensorOps::reshape(transposedWeights, this->outputShape[3], weightsDimTwo);
+    // shuffle weights (3, 2, 0, 1)
+    // reshape weights to be (numFilters, w[0]*w[1]*w[2])
+    Eigen::Tensor<double, 4, 0, long> shuffledWeights = TensorOps::shuffle(this->weights, 3, 2, 0, 1);
+    Eigen::Tensor<double, 2, 0, long> reshapedWeights = TensorOps::reshape(shuffledWeights, this->outputShape[3], weightsDimTwo);
 
+    // w * cols
+    // reshape output to be (numFilters, outputHeight, outputWidth, batchSize)
     Eigen::Tensor<double, 2, 0, long> output         = TensorOps::dot(reshapedWeights, this->cols);
     Eigen::Tensor<double, 4, 0, long> reshapedOutput = TensorOps::reshape(output, this->outputShape[3], this->outputShape[1], this->outputShape[2], this->outputShape[0]);
 
-    Eigen::array<long, 4> outputShuffleIndices({3, 1, 2, 0});
-    Eigen::Tensor<double, 4, 0, long> finalOutput = reshapedOutput.shuffle(outputShuffleIndices);
+    // shuffle output (3, 1, 2, 0)
+    Eigen::Tensor<double, 4, 0, long> finalOutput = TensorOps::shuffle(reshapedOutput, 3, 1, 2, 0);
 
+    // broadcast biases to be (batchSize, outputHeight, outputWidth, numFilters)
     Eigen::Tensor<double, 4, 0, long> broadcastBiases = TensorOps::broadcast(this->biases, this->outputShape[0], this->outputShape[1], this->outputShape[2], 1);
 
+    // output + biases
     return finalOutput + broadcastBiases;
 }
 
 Eigen::Tensor<double, 4, 0, long> Conv2D::backward(Eigen::Tensor<double, 4, 0, long> t) {
+    // reshape t to be the same shape as
     Eigen::Tensor<double, 4, 0, long> reshapedT = TensorOps::reshape(t, this->outputShape[0], this->outputShape[1], this->outputShape[2], this->outputShape[3]);
 
-    Eigen::array<long, 3> axisIndex({0, 1, 2});
-    Eigen::Tensor<double, 1, 0, long> sum = reshapedT.sum(axisIndex);
+    // t.sum(asxis=(0, 1, 2)) / batchSize
+    this->dBiases = TensorOps::sum(reshapedT, 0, 1, 2) / this->biases.constant(batchSize);
 
-    this->dBiases = reshapedT.sum(axisIndex) / this->biases.constant(batchSize);
+    // shuffle t (3, 1, 2, 0)
+    Eigen::Tensor<double, 4, 0, long> transposedT = TensorOps::shuffle(reshapedT, 3, 1, 2, 0);
 
-    Eigen::array<long, 4> tShuffleIndices({3, 1, 2, 0});
-    Eigen::Tensor<double, 4, 0, long> transposedT = reshapedT.shuffle(tShuffleIndices);
-
+    // reshape t to be (numFilters, batchSize * outputHeight * outputWidth)
     std::size_t tDimTwo = this->outputShape[0] * this->outputShape[1] * this->outputShape[2];
     Eigen::Tensor<double, 2, 0, long> reshapedTT = TensorOps::reshape(transposedT, this->outputShape[3], tDimTwo);
 
-    Eigen::array<long, 4> weightsShuffleIndices({3, 2, 0, 1});
-    Eigen::Tensor<double, 4, 0, long> transposedWeights = this->weights.shuffle(weightsShuffleIndices);
+    // shuffle weights (3, 2, 0, 1)
+    Eigen::Tensor<double, 4, 0, long> transposedWeights = TensorOps::shuffle(this->weights, 3, 2, 0, 1);
 
+    // t * cols.t
     Eigen::Tensor<double, 2, 0, long> weightGradients = TensorOps::dot(reshapedTT, TensorOps::transpose(this->cols));
 
+    // reshape weight gradients to be (numFilters, inputChannels, filterSize, filterSze)
     Eigen::Tensor<double, 4, 0, long> reshapedDWeights = TensorOps::reshape(weightGradients, transposedWeights.dimension(0), transposedWeights.dimension(1), transposedWeights.dimension(2), transposedWeights.dimension(3));
 
-    Eigen::array<long, 4> dWeightsShuffleIndices({2, 3, 1, 0});
-    this->dWeights = reshapedDWeights.shuffle(dWeightsShuffleIndices);
+    // shuffle dWeights (2, 3, 1, 0)
+    this->dWeights = TensorOps::shuffle(reshapedDWeights, 2, 3, 1, 0);
 
+    // reshape weights to be (numFilters, w[0]*w[1]*w[2])
     std::size_t weightsDimTwo = this->weights.dimension(0) * this->weights.dimension(1) * this->weights.dimension(2);
     Eigen::Tensor<double, 2, 0, long> reshapedWeights = TensorOps::reshape(transposedWeights, this->outputShape[3], weightsDimTwo);
 
+    // w.t * t
     Eigen::Tensor<double, 2, 0, long> outputCols = TensorOps::dot(TensorOps::transpose(reshapedWeights), reshapedTT);
 
+    // col2im
     Eigen::Tensor<double, 4, 0, long> output = this->col2im(outputCols);
-
-    Eigen::array<long, 4> outputShuffleIndices({0, 2, 3, 1});
 
     this->weights = this->weights - (this->weights.constant(0.01) * this->dWeights);
     this->biases  = this->biases  - (this->biases.constant(0.01)  * this->dBiases);
 
-    return output.shuffle(outputShuffleIndices);
+    // shuffle output (0, 2, 3, 1)
+    return TensorOps::shuffle(output, 0, 2, 3, 1);
 }
 
-Eigen::Tensor<double, 2, 0, long> Conv2D::im2col(Eigen::Tensor<double, 4, 0, long> x) {
-    Eigen::array<long, 4> shuffleIndices({0, 3, 2, 1});
-    Eigen::Tensor<double, 4, 0, long> nchwX = x.shuffle(shuffleIndices);
+Eigen::Tensor<double, 2, 0, long> Conv2D::im2col(const Eigen::Tensor<double, 4, 0, long>& x) {
+    // shuffle x from nhwc to nchw
+    Eigen::Tensor<double, 4, 0, long> nchwX = TensorOps::shuffle(x, 0, 3, 2, 1);
 
     std::size_t n = nchwX.dimension(0);
     std::size_t c = nchwX.dimension(1);
     std::size_t h = nchwX.dimension(2);
     std::size_t w = nchwX.dimension(3);
 
+    // calculate output size
     auto hh = std::size_t(((h + (2 * this->pad) - this->filterSize) / this->stride) + 1);
     auto ww = std::size_t(((w + (2 * this->pad) - this->filterSize) / this->stride) + 1);
 
+    // pad x if necessary
     Eigen::Tensor<double, 4, 0, long> paddedX;
 
     if(this->pad != 0) {
@@ -168,6 +160,7 @@ Eigen::Tensor<double, 4, 0, long> Conv2D::col2im(Eigen::Tensor<double, 2, 0, lon
     std::size_t w = this->previousX.dimension(2);
     std::size_t c = this->previousX.dimension(3);
 
+    // calculate output size
     auto hh = std::size_t(((h + (2 * this->pad) - this->filterSize) / this->stride) + 1);
     auto ww = std::size_t(((w + (2 * this->pad) - this->filterSize) / this->stride) + 1);
 
@@ -192,11 +185,12 @@ Eigen::Tensor<double, 4, 0, long> Conv2D::col2im(Eigen::Tensor<double, 2, 0, lon
         }
     }
 
+    // unpad x if necessary
     Eigen::Tensor<double, 4, 0, long> unpaddedX;
 
     if(this->pad != 0) {
-        Eigen::array<long, 4> offsets = {0, 0, int(this->pad), int(this->pad)};
-        Eigen::array<long, 4> extents = {x.dimension(0), x.dimension(1), x.dimension(2) - int(2 * this->pad), x.dimension(3) - int(2 * this->pad)};
+        Eigen::array<long, 4> offsets = {0, 0, long(this->pad), long(this->pad)};
+        Eigen::array<long, 4> extents = {x.dimension(0), x.dimension(1), x.dimension(2) - long(2 * this->pad), x.dimension(3) - long(2 * this->pad)};
 
         unpaddedX = x.slice(offsets, extents);
     } else {

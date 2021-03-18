@@ -16,7 +16,7 @@ public:
     Eigen::Tensor<double, 4, 0, long> backward(Eigen::Tensor<double, 4, 0, long> t) override;
 
 private:
-    Eigen::Tensor<double, 2, 0, long> im2col(Eigen::Tensor<double, 4, 0, long> x);
+    Eigen::Tensor<double, 2, 0, long> im2col(const Eigen::Tensor<double, 4, 0, long>& x);
     Eigen::Tensor<double, 4, 0, long> col2im(Eigen::Tensor<double, 2, 0, long> x);
 
     Eigen::Tensor<double, 4, 0, long> weights;
