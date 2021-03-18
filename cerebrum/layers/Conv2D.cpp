@@ -75,23 +75,23 @@ Eigen::Tensor<double, 4, 0, long> Conv2D::forward(Eigen::Tensor<double, 4, 0, lo
 }
 
 Eigen::Tensor<double, 4, 0, long> Conv2D::backward(Eigen::Tensor<double, 4, 0, long> t) {
+    Eigen::Tensor<double, 4, 0, long> reshapedT = TensorOps::reshape(t, this->outputShape[0], this->outputShape[1], this->outputShape[2], this->outputShape[3]);
+
     Eigen::array<long, 3> axisIndex({0, 1, 2});
-    Eigen::Tensor<double, 1, 0, long> sum = t.sum(axisIndex);
-//    TensorOps::printShape(t);
-//    TensorOps::printShape(sum);
-//    TensorOps::printShape(this->biases);
-    this->dBiases = t.sum(axisIndex) / this->biases.constant(batchSize);
+    Eigen::Tensor<double, 1, 0, long> sum = reshapedT.sum(axisIndex);
+
+    this->dBiases = reshapedT.sum(axisIndex) / this->biases.constant(batchSize);
 
     Eigen::array<long, 4> tShuffleIndices({3, 1, 2, 0});
-    Eigen::Tensor<double, 4, 0, long> transposedT = t.shuffle(tShuffleIndices);
+    Eigen::Tensor<double, 4, 0, long> transposedT = reshapedT.shuffle(tShuffleIndices);
 
     std::size_t tDimTwo = this->outputShape[0] * this->outputShape[1] * this->outputShape[2];
-    Eigen::Tensor<double, 2, 0, long> reshapedT = TensorOps::reshape(transposedT, this->outputShape[3], tDimTwo);
+    Eigen::Tensor<double, 2, 0, long> reshapedTT = TensorOps::reshape(transposedT, this->outputShape[3], tDimTwo);
 
     Eigen::array<long, 4> weightsShuffleIndices({3, 2, 0, 1});
     Eigen::Tensor<double, 4, 0, long> transposedWeights = this->weights.shuffle(weightsShuffleIndices);
 
-    Eigen::Tensor<double, 2, 0, long> weightGradients = TensorOps::dot(reshapedT, TensorOps::transpose(this->cols));
+    Eigen::Tensor<double, 2, 0, long> weightGradients = TensorOps::dot(reshapedTT, TensorOps::transpose(this->cols));
 
     Eigen::Tensor<double, 4, 0, long> reshapedDWeights = TensorOps::reshape(weightGradients, transposedWeights.dimension(0), transposedWeights.dimension(1), transposedWeights.dimension(2), transposedWeights.dimension(3));
 
@@ -101,7 +101,7 @@ Eigen::Tensor<double, 4, 0, long> Conv2D::backward(Eigen::Tensor<double, 4, 0, l
     std::size_t weightsDimTwo = this->weights.dimension(0) * this->weights.dimension(1) * this->weights.dimension(2);
     Eigen::Tensor<double, 2, 0, long> reshapedWeights = TensorOps::reshape(transposedWeights, this->outputShape[3], weightsDimTwo);
 
-    Eigen::Tensor<double, 2, 0, long> outputCols = TensorOps::dot(TensorOps::transpose(reshapedWeights), reshapedT);
+    Eigen::Tensor<double, 2, 0, long> outputCols = TensorOps::dot(TensorOps::transpose(reshapedWeights), reshapedTT);
 
     Eigen::Tensor<double, 4, 0, long> output = this->col2im(outputCols);
 
@@ -171,7 +171,7 @@ Eigen::Tensor<double, 4, 0, long> Conv2D::col2im(Eigen::Tensor<double, 2, 0, lon
     auto hh = std::size_t(((h + (2 * this->pad) - this->filterSize) / this->stride) + 1);
     auto ww = std::size_t(((w + (2 * this->pad) - this->filterSize) / this->stride) + 1);
 
-    Eigen::Tensor<double, 4, 0, long> x(n, c, h + (2 * this->pad), w + (w * this->pad));
+    Eigen::Tensor<double, 4, 0, long> x(n, c, h + (2 * this->pad), w + (2 * this->pad));
     x.setZero();
 
     for(std::size_t cc = 0; cc < c; cc++) {
@@ -192,7 +192,16 @@ Eigen::Tensor<double, 4, 0, long> Conv2D::col2im(Eigen::Tensor<double, 2, 0, lon
         }
     }
 
-    // TODO unpad x
+    Eigen::Tensor<double, 4, 0, long> unpaddedX;
 
-    return x;
+    if(this->pad != 0) {
+        Eigen::array<long, 4> offsets = {0, 0, int(this->pad), int(this->pad)};
+        Eigen::array<long, 4> extents = {x.dimension(0), x.dimension(1), x.dimension(2) - int(2 * this->pad), x.dimension(3) - int(2 * this->pad)};
+
+        unpaddedX = x.slice(offsets, extents);
+    } else {
+        unpaddedX = x;
+    }
+
+    return unpaddedX;
 }

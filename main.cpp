@@ -11,12 +11,14 @@
 int main()
 {
     auto *input    = new Input({2, 28, 28, 1});
-    auto *conv     = new Conv2D(input, 8, 3, 1, "same");
-    auto *relu     = new ReLU(conv);
-    auto *dense    = new Dense(relu, 2);
+    auto *convOne  = new Conv2D(input, 8, 3, 1, "same");
+    auto *reluOne  = new ReLU(convOne);
+    auto *convTwo  = new Conv2D(reluOne, 8, 3, 1, "same");
+    auto *reluTwo  = new ReLU(convTwo);
+    auto *dense    = new Dense(reluTwo, 2);
     auto *softmax  = new Softmax(dense);
 
-    std::vector<Layer *> layers = {conv, relu, dense, softmax};
+    std::vector<Layer *> layers = {convOne, reluOne, convTwo, reluTwo, dense, softmax};
 
     Eigen::Tensor<double, 4, 0, long> inputs(2, 28, 28, 1);
     inputs.setZero();
@@ -32,7 +34,7 @@ int main()
     outputs(0, 0, 0, 0) = 1;
     outputs(1, 0, 0, 1) = 1;
 
-    for(std::size_t i = 0; i < 100000000; i++) {
+    for(std::size_t i = 0; i < 1000; i++) {
         Eigen::Tensor<double, 4, 0, long> x = inputs;
 
         for(Layer *layer : layers) {
@@ -41,7 +43,7 @@ int main()
 
         Eigen::Tensor<double, 4, 0, long> deltas = x - outputs;
 
-        if((i % 10000) == 0) {
+        if((i % 1000) == 0) {
             Eigen::Tensor<double, 0> loss = deltas.abs().sum();
             loss /= loss.constant(inputs.dimension(0));
 
