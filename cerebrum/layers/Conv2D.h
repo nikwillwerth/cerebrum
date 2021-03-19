@@ -15,10 +15,6 @@ public:
     Eigen::Tensor<double, 4, 0, long> forward(Eigen::Tensor<double, 4, 0, long> x) override;
     Eigen::Tensor<double, 4, 0, long> backward(Eigen::Tensor<double, 4, 0, long> t) override;
 
-private:
-    Eigen::Tensor<double, 2, 0, long> im2col(const Eigen::Tensor<double, 4, 0, long>& x);
-    Eigen::Tensor<double, 4, 0, long> col2im(Eigen::Tensor<double, 2, 0, long> x);
-
     Eigen::Tensor<double, 2, 0, long> getWeights()  override;
     Eigen::Tensor<double, 2, 0, long> getBiases()   override;
     Eigen::Tensor<double, 2, 0, long> getDWeights() override;
@@ -26,6 +22,10 @@ private:
 
     void setWeights(Eigen::Tensor<double, 2, 0, long> newWeights) override;
     void setBiases(Eigen::Tensor<double, 2, 0, long>  newBiases)  override;
+
+private:
+    Eigen::Tensor<double, 2, 0, long> im2col(const Eigen::Tensor<double, 4, 0, long>& x);
+    Eigen::Tensor<double, 4, 0, long> col2im(Eigen::Tensor<double, 2, 0, long> x);
 
     Eigen::Tensor<double, 4, 0, long> _weights;
     Eigen::Tensor<double, 1, 0, long> _biases;
