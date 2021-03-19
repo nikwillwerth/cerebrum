@@ -123,3 +123,4 @@ _deps
 
 
 *.cbp
+**.DS_Store

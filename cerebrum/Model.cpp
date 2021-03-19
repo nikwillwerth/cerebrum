@@ -67,8 +67,8 @@ void Model::train(size_t batchSize, size_t epochs) {
     Eigen::Tensor<double, 4, 0, long> inputs(batchSize, 28, 28, 1);
     inputs.setZero();
 
-    for(std::size_t i = 0; i < 28; i++) {
-        for(std::size_t j = 0; j < 28; j++) {
+    for(long i = 0; i < 28; i++) {
+        for(long j = 0; j < 28; j++) {
             inputs(1, i, j, 0) = 1;
         }
     }

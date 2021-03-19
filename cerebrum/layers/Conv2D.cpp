@@ -132,17 +132,17 @@ Eigen::Tensor<double, 2, 0, long> Conv2D::im2col(const Eigen::Tensor<double, 4, 
     Eigen::Tensor<double, 2, 0, long> imCols(c * this->_filterSize * this->_filterSize, n * hh * ww);
     imCols.setZero();
 
-    for(std::size_t cc = 0; cc < c; cc++) {
-        for(std::size_t ii = 0; ii < this->_filterSize; ii++) {
-            for(std::size_t jj = 0; jj < this->_filterSize; jj++) {
-                std::size_t row = (cc * this->_filterSize * this->_filterSize) + (ii * this->_filterSize) + jj;
+    for(long cc = 0; cc < c; cc++) {
+        for(long ii = 0; ii < this->_filterSize; ii++) {
+            for(long jj = 0; jj < this->_filterSize; jj++) {
+                long row = (cc * this->_filterSize * this->_filterSize) + (ii * this->_filterSize) + jj;
 
-                for(std::size_t yy = 0; yy < hh; yy++) {
-                    for(std::size_t xx = 0; xx < ww; xx++) {
-                        for(std::size_t i = 0; i < n; i++) {
+                for(long yy = 0; yy < hh; yy++) {
+                    for(long xx = 0; xx < ww; xx++) {
+                        for(long i = 0; i < n; i++) {
                             std::size_t col = (yy * ww * n) + (xx * n) + 1;
 
-                            imCols(row, col) = paddedX(i, cc, (this->_stride * yy) + ii, (this->_stride * xx) + jj);
+                            imCols(row, col) = paddedX(i, cc, long(this->_stride * yy) + ii, long(this->_stride * xx) + jj);
                         }
                     }
                 }
@@ -154,29 +154,29 @@ Eigen::Tensor<double, 2, 0, long> Conv2D::im2col(const Eigen::Tensor<double, 4, 
 }
 
 Eigen::Tensor<double, 4, 0, long> Conv2D::col2im(Eigen::Tensor<double, 2, 0, long> outputCols) {
-    std::size_t n = this->previousX.dimension(0);
-    std::size_t h = this->previousX.dimension(1);
-    std::size_t w = this->previousX.dimension(2);
-    std::size_t c = this->previousX.dimension(3);
+    long n = this->previousX.dimension(0);
+    long h = this->previousX.dimension(1);
+    long w = this->previousX.dimension(2);
+    long c = this->previousX.dimension(3);
 
     // calculate output size
-    auto hh = std::size_t(((h + (2 * this->_pad) - this->_filterSize) / this->_stride) + 1);
-    auto ww = std::size_t(((w + (2 * this->_pad) - this->_filterSize) / this->_stride) + 1);
+    auto hh = long(((h + (2 * this->_pad) - this->_filterSize) / this->_stride) + 1);
+    auto ww = long(((w + (2 * this->_pad) - this->_filterSize) / this->_stride) + 1);
 
-    Eigen::Tensor<double, 4, 0, long> x(n, c, h + (2 * this->_pad), w + (2 * this->_pad));
+    Eigen::Tensor<double, 4, 0, long> x(n, c, h + long(2 * this->_pad), w + long(2 * this->_pad));
     x.setZero();
 
-    for(std::size_t cc = 0; cc < c; cc++) {
-        for(std::size_t ii = 0; ii < this->_filterSize; ii++) {
-            for(std::size_t jj = 0; jj < this->_filterSize; jj++) {
-                std::size_t row = (cc * this->_filterSize * this->_filterSize) + (ii * this->_filterSize) + jj;
+    for(long cc = 0; cc < c; cc++) {
+        for(long ii = 0; ii < this->_filterSize; ii++) {
+            for(long jj = 0; jj < this->_filterSize; jj++) {
+                long row = (cc * this->_filterSize * this->_filterSize) + (ii * this->_filterSize) + jj;
 
-                for(std::size_t yy = 0; yy < hh; yy++) {
-                    for(std::size_t xx = 0; xx < ww; xx++) {
-                        for(std::size_t i = 0; i < n; i++) {
-                            std::size_t col = (yy * ww * n) + (xx * n) + 1;
+                for(long yy = 0; yy < hh; yy++) {
+                    for(long xx = 0; xx < ww; xx++) {
+                        for(long i = 0; i < n; i++) {
+                            long col = (yy * ww * n) + (xx * n) + 1;
 
-                            x(i, cc, (this->_stride * yy) + ii, (this->_stride * xx) + jj) += outputCols(row, col);
+                            x(i, cc, long(this->_stride * yy) + ii, long(this->_stride * xx) + jj) += outputCols(row, col);
                         }
                     }
                 }
