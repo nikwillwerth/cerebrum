@@ -11,13 +11,13 @@
 
 class Softmax: public Layer {
 public:
-    Softmax(Layer *inputLayer);
+    Softmax(Layer *inputLayer, std::string layerName = "Softmax");
 
     Eigen::Tensor<double, 4, 0, long> forward(Eigen::Tensor<double, 4, 0, long> x) override;
     Eigen::Tensor<double, 4, 0, long> backward(Eigen::Tensor<double, 4, 0, long> t) override;
 
 private:
-    size_t numOutputs;
+    size_t _numOutputs;
 };
 
 

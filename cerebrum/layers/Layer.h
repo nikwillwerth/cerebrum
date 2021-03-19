@@ -10,18 +10,29 @@
 
 class Layer {
 public:
-    explicit Layer(Layer *inputLayer);
+    Layer(Layer *inputLayer, std::string layerName);
+    Layer(std::vector<Layer *> inputLayers, std::string layerName);
 
-    virtual Eigen::Tensor<double, 4> forward(Eigen::Tensor<double, 4> x) { return Eigen::Tensor<double, 4>(); };
-    virtual Eigen::Tensor<double, 4> backward(Eigen::Tensor<double, 4> t) { return Eigen::Tensor<double, 4>(); };
+    virtual Eigen::Tensor<double, 4, 0, long> forward(Eigen::Tensor<double, 4, 0, long> x) { return Eigen::Tensor<double, 4, 0, long>(); };
+    virtual Eigen::Tensor<double, 4, 0, long> backward(Eigen::Tensor<double, 4, 0, long> t) { return Eigen::Tensor<double, 4, 0, long>(); };
 
-    Eigen::Tensor<double, 4> previousX;
+    virtual Eigen::Tensor<double, 2, 0, long> getWeights() { return Eigen::Tensor<double, 2, 0, long>(); };
+    virtual Eigen::Tensor<double, 2, 0, long> getBiases()  { return Eigen::Tensor<double, 2, 0, long>(); };
+    virtual Eigen::Tensor<double, 2, 0, long> getDWeights() { return Eigen::Tensor<double, 2, 0, long>(); };
+    virtual Eigen::Tensor<double, 2, 0, long> getDBiases()  { return Eigen::Tensor<double, 2, 0, long>(); };
 
+    virtual void setWeights(Eigen::Tensor<double, 2, 0, long> newWeights) {};
+    virtual void setBiases(Eigen::Tensor<double, 2, 0, long>  newBiases) {};
+
+    Eigen::Tensor<double, 4, 0, long> previousX;
+
+    std::vector<Layer *> inputLayers;
+    std::vector<Layer *> outputLayers;
     std::vector<std::size_t> outputShape;
     std::size_t batchSize;
+    std::string name;
 
-protected:
-    Layer *inputLayer;
+    bool hasWeights = true;
 };
 
 

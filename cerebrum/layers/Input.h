@@ -10,7 +10,7 @@
 
 class Input: public Layer {
 public:
-    explicit Input(const std::vector<std::size_t> &inputShape);
+    Input(const std::vector<std::size_t> &inputShape, std::string layerName = "Input");
 };
 
 

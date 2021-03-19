@@ -5,7 +5,7 @@
 #include <iostream>
 #include "TensorOps.h"
 
-Eigen::Tensor<double, 2, 0, long> TensorOps::dot(const Eigen::Tensor<double, 2, 0, long>& a, const Eigen::Tensor<double, 2, 0, long>& b) {
+Eigen::Tensor<double, 2, 0, long> TensorOps::dot(Eigen::Tensor<double, 2, 0, long> a, Eigen::Tensor<double, 2, 0, long> b) {
     Eigen::array<Eigen::IndexPair<long>, 1> dotProductDims = { Eigen::IndexPair<long>(1, 0) };
 
     return a.contract(b, dotProductDims);
@@ -55,6 +55,12 @@ Eigen::Tensor<double, 1, 0, long> TensorOps::sum(const Eigen::Tensor<double, 4, 
     Eigen::array<long, 3> axisIndices({long(axisOne), long(axisTwo), long(axisThree)});
 
     return x.sum(axisIndices);
+}
+
+Eigen::Tensor<double, 1, 0, long> TensorOps::reshape(Eigen::Tensor<double, 2, 0, long> x, size_t dimOne) {
+    Eigen::array<long, 1> newShape{{long(dimOne)}};
+
+    return x.reshape(newShape);
 }
 
 Eigen::Tensor<double, 2, 0, long> TensorOps::reshape(Eigen::Tensor<double, 1, 0, long> x, size_t dimOne, size_t dimTwo) {

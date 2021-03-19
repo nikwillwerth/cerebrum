@@ -3,10 +3,13 @@
 //
 
 #include "ReLU.h"
+
+#include <utility>
 #include "../utils/TensorOps.h"
 
-ReLU::ReLU(Layer *inputLayer) : Layer(inputLayer) {
+ReLU::ReLU(Layer *inputLayer, std::string layerName) : Layer(inputLayer, std::move(layerName)) {
     this->outputShape = inputLayer->outputShape;
+    this->hasWeights  = false;
 }
 
 Eigen::Tensor<double, 4, 0, long> ReLU::forward(Eigen::Tensor<double, 4, 0, long> x) {
