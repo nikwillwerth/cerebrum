@@ -5,6 +5,7 @@
 #include "Model.h"
 #include "layers/Input.h"
 #include "utils/TensorOps.h"
+#include "data/Mnist.h"
 
 #include <utility>
 #include <iostream>
@@ -65,20 +66,25 @@ void Model::compile(Input *inputLayer, Optimizer *optimizer) {
 
 void Model::train(size_t batchSize, size_t epochs) {
     Eigen::Tensor<double, 4, 0, long> inputs(batchSize, 28, 28, 1);
-    inputs.setZero();
+    Eigen::Tensor<double, 4, 0, long> outputs(batchSize, 1, 1, 10);
 
-    for(long i = 0; i < 28; i++) {
-        for(long j = 0; j < 28; j++) {
-            inputs(1, i, j, 0) = 1;
-        }
-    }
-
-    Eigen::Tensor<double, 4, 0, long> outputs(batchSize, 1, 1, 2);
-    outputs.setZero();
-    outputs(0, 0, 0, 0) = 1;
-    outputs(1, 0, 0, 1) = 1;
+    auto mnist = new Mnist();
 
     for(std::size_t i = 0; i < epochs; i++) {
+        for(std::size_t j = 0; j < batchSize; j++) {
+            Eigen::array<long, 4> offsets = {long(j), 0, 0, 0};
+            Eigen::array<long, 4> extents = {1, inputs.dimension(1), inputs.dimension(2), inputs.dimension(3)};
+
+            inputs.slice(offsets, extents) = mnist->trainImages[j] / mnist->trainImages[j].constant(255);
+        }
+
+        for(std::size_t j = 0; j < batchSize; j++) {
+            Eigen::array<long, 4> offsets = {long(j), 0, 0, 0};
+            Eigen::array<long, 4> extents = {1, outputs.dimension(1), outputs.dimension(2), outputs.dimension(3)};
+
+            outputs.slice(offsets, extents) = mnist->trainLabels[j];
+        }
+
         Eigen::Tensor<double, 4, 0, long> x = inputs;
 
         for(Layer *layer : this->_sortedLayers) {
@@ -87,7 +93,7 @@ void Model::train(size_t batchSize, size_t epochs) {
 
         Eigen::Tensor<double, 4, 0, long> deltas = x - outputs;
 
-        if((i % 100) == 0) {
+        if((i % 10000) == 0) {
             Eigen::Tensor<double, 0> loss = deltas.abs().sum();
             loss /= loss.constant(inputs.dimension(0));
 

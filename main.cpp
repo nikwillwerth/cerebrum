@@ -3,28 +3,20 @@
 #include "cerebrum/layers/Softmax.h"
 #include "cerebrum/layers/ReLU.h"
 #include "cerebrum/layers/Conv2D.h"
-#include "cerebrum/optimizers/SGD.h"
 #include "cerebrum/Model.h"
 #include "cerebrum/utils/NetIO.h"
-#include "cerebrum/data/Mnist.h"
 
 int main()
 {
-//    size_t batchSize = 2;
-//
-//    auto *input    = new Input({batchSize, 28, 28, 1});
-//    auto *convOne  = new Conv2D(input, 8, 3, 1, "same");
-//    auto *reluOne  = new ReLU(convOne);
-//    auto *convTwo  = new Conv2D(reluOne, 8, 3, 1, "same");
-//    auto *reluTwo  = new ReLU(convTwo);
-//    auto *dense    = new Dense(reluTwo, 2);
-//    auto *softmax  = new Softmax(dense);
-//
-//    auto *model = new Model();
-//    model->compile(input);
-//    model->train(batchSize, 1000);
+    size_t batchSize = 2;
 
-    Mnist();
+    auto *input   = new Input({batchSize, 28, 28, 1});
+    auto *conv    = new Conv2D(input, 10, 28, 1, "valid");
+    auto *softmax = new Softmax(conv);
+
+    auto *model = new Model();
+    model->compile(input);
+    model->train(batchSize, 100000000);
 
     return 0;
 }

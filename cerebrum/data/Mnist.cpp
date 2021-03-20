@@ -43,21 +43,21 @@ std::size_t charsToInt(std::vector<unsigned char> data, std::size_t offset)
     return (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | (data[offset + 3]);
 }
 
-std::vector<Eigen::Tensor<double, 3, 0, long>> Mnist::readImages(const std::string& fileName) {
+std::vector<Eigen::Tensor<double, 4, 0, long>> Mnist::readImages(const std::string& fileName) {
     std::vector<unsigned char> data = Mnist::decompressFile(fileName);
 
     long numImages = charsToInt(data, 4);
     long numRows   = charsToInt(data, 8);
     long numCols   = charsToInt(data, 12);
 
-    std::vector<Eigen::Tensor<double, 3, 0, long>> images;
+    std::vector<Eigen::Tensor<double, 4, 0, long>> images;
     images.reserve(numImages * numRows * numCols);
 
     std::size_t imageSize = numRows * numCols;
 
     for(std::size_t offset = 16; offset < data.size(); offset += imageSize)
     {
-        Eigen::Tensor<double, 3, 0, long> image(numCols, numRows, 1);
+        Eigen::Tensor<double, 4, 0, long> image(1, numCols, numRows, 1);
         double *imageData = image.data();
 
         for(std::size_t index = 0; index < imageSize; index++)
@@ -73,21 +73,21 @@ std::vector<Eigen::Tensor<double, 3, 0, long>> Mnist::readImages(const std::stri
     return images;
 }
 
-std::vector<Eigen::Tensor<double, 3, 0, long>> Mnist::readLabels(const std::string &fileName) {
+std::vector<Eigen::Tensor<double, 4, 0, long>> Mnist::readLabels(const std::string &fileName) {
     std::vector<unsigned char> data = Mnist::decompressFile(fileName);
 
     long numLabels = charsToInt(data, 4);
 
-    std::vector<Eigen::Tensor<double, 3, 0, long>> labels;
+    std::vector<Eigen::Tensor<double, 4, 0, long>> labels;
     labels.reserve(numLabels);
 
     for(std::size_t offset = 8; offset < data.size(); offset++)
     {
         long classIndex = static_cast<long>(data[offset]);
 
-        Eigen::Tensor<double, 3, 0, long> label(1, 1, 10);
+        Eigen::Tensor<double, 4, 0, long> label(1, 1, 1, 10);
         label.setZero();
-        label(0, 0, classIndex) = 1;
+        label(0, 0, 0, classIndex) = 1;
 
         labels.emplace_back(label);
     }
