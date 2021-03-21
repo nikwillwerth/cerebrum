@@ -72,17 +72,16 @@ void Model::train(size_t batchSize, size_t epochs) {
 
     for(std::size_t i = 0; i < epochs; i++) {
         for(std::size_t j = 0; j < batchSize; j++) {
+            unsigned long dataIndex = rand() % mnist->trainImages.size();
+
             Eigen::array<long, 4> offsets = {long(j), 0, 0, 0};
             Eigen::array<long, 4> extents = {1, inputs.dimension(1), inputs.dimension(2), inputs.dimension(3)};
 
-            inputs.slice(offsets, extents) = mnist->trainImages[j] / mnist->trainImages[j].constant(255);
-        }
+            inputs.slice(offsets, extents) = mnist->trainImages[dataIndex] / mnist->trainImages[dataIndex].constant(255);
 
-        for(std::size_t j = 0; j < batchSize; j++) {
-            Eigen::array<long, 4> offsets = {long(j), 0, 0, 0};
-            Eigen::array<long, 4> extents = {1, outputs.dimension(1), outputs.dimension(2), outputs.dimension(3)};
+            extents = {1, outputs.dimension(1), outputs.dimension(2), outputs.dimension(3)};
 
-            outputs.slice(offsets, extents) = mnist->trainLabels[j];
+            outputs.slice(offsets, extents) = mnist->trainLabels[dataIndex];
         }
 
         Eigen::Tensor<double, 4, 0, long> x = inputs;
